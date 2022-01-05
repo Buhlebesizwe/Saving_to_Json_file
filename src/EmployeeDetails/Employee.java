@@ -10,6 +10,8 @@ import java.time.LocalDate;
 import java.util.*;
 import java.util.regex.*;
 import com.fasterxml.jackson.databind.*;
+import com.fasterxml.jackson.core.Versioned;
+import java.nio.file.Paths;
 
 public class Employee implements Serializable {
 
@@ -39,15 +41,11 @@ public class Employee implements Serializable {
     static Scanner sString = new Scanner(System.in);
 
     
-    public static void serialiseToFile(Object object,String filePath)throws IOException{
-        ObjectMapper objectMapper = new ObjectMapper();
+  // create object mapper instance
+    static ObjectMapper mapper = new ObjectMapper();
 
-        FileOutputStream fos = new FileOutputStream(filePath);
-        objectMapper.writeValue(fos, object);
-        fos.flush();
-        fos.close();
-    }
-
+    // convert book object to JSON file
+    
 
 //checking if the input is an email
     public static boolean isEmail(String email) {
@@ -169,6 +167,7 @@ public class Employee implements Serializable {
             aList.add(new Employee(name, surname, email, date_of_birth));
             number++;
         } while (number < 0);
+        ObjectMapper.writeValue(Paths.get("books.json").toFile(), aList);
 
         oos = new ObjectOutputStream(new FileOutputStream(file));
         oos.writeObject(aList);
