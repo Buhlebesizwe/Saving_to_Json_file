@@ -9,9 +9,9 @@ import java.text.*;
 import java.time.LocalDate;
 import java.util.*;
 import java.util.regex.*;
-import com.fasterxml.jackson.databind.*;
-import com.fasterxml.jackson.core.Versioned;
-import java.nio.file.Paths;
+import com.google.gson.*;
+import com.google.gson.reflect.TypeToken;
+import java.nio.file.*;
 
 public class Employee implements Serializable {
 
@@ -31,21 +31,36 @@ public class Employee implements Serializable {
         return name + " " + surname + " " + email + " " + date_of_birth;
     }
 
-    static File file = new File("Employee.txt");
-
+    static File file = new File("Employee.json");
     static ArrayList<Employee> aList = new ArrayList<>();
+    static ArrayList<Employee> zList = new ArrayList<>();
     static ObjectOutputStream oos;
-
     static ObjectInputStream ois;
     static ListIterator li;
     static Scanner sString = new Scanner(System.in);
 
-    
-  // create object mapper instance
-    static ObjectMapper mapper = new ObjectMapper();
+//add employee to json file
+    static void saveToJson(ArrayList object) throws IOException {
+        Gson gson = new Gson();
+        try (
+                Reader reader = Files.newBufferedReader(Paths.get("Employee.json"))) {
+            // convert JSON array to list of users
+            ArrayList<Employee> users = new Gson().fromJson(reader, new TypeToken<ArrayList<Employee>>() {
+            }.getType());
 
-    // convert book object to JSON file
-    
+            users.addAll(object);
+                String json = gson.toJson(users);
+                try (Writer writer = new FileWriter(file)) {
+                    writer.write(json);
+                    writer.flush();
+                    
+                }
+
+        } catch (IOException e) {
+            System.out.println("File not found");
+        }
+    }
+    //update json
 
 //checking if the input is an email
     public static boolean isEmail(String email) {
@@ -57,13 +72,14 @@ public class Employee implements Serializable {
 //checking if email already exist
 
     public static boolean isEmailExist(String email) throws Exception {
-
         boolean found = false;
-        if (file.isFile()) {
-            ois = new ObjectInputStream(new FileInputStream(file));
-            aList = (ArrayList<Employee>) ois.readObject();
-            ois.close();
-            li = aList.listIterator();
+        try (
+                Reader reader = Files.newBufferedReader(Paths.get("Employee.json"))) {
+            // convert JSON array to list of users
+            ArrayList<Employee> users = new Gson().fromJson(reader, new TypeToken<ArrayList<Employee>>() {
+            }.getType());
+            reader.close();
+            li = users.listIterator();
             while (li.hasNext()) {
                 Employee e = (Employee) li.next();
                 found = e.email.contentEquals(email);
@@ -167,49 +183,46 @@ public class Employee implements Serializable {
             aList.add(new Employee(name, surname, email, date_of_birth));
             number++;
         } while (number < 0);
-        ObjectMapper.writeValue(Paths.get("books.json").toFile(), aList);
+        saveToJson(aList);
 
-        oos = new ObjectOutputStream(new FileOutputStream(file));
-        oos.writeObject(aList);
-        oos.flush();
-        oos.close();
     }
 
 //Display Employees
-    public static void display() throws FileNotFoundException, IOException, ClassNotFoundException {
-        if (file.isFile()) {
-            ois = new ObjectInputStream(new FileInputStream(file));
-            aList = (ArrayList<Employee>) ois.readObject();
-            ois.close();
+    public static void display() throws IOException {
+        try {
+            try (Reader reader = Files.newBufferedReader(Paths.get("Employee.json"))) {
 
-            System.out.println("*****************************************************************************");
-            li = aList.listIterator();
-            while (li.hasNext()) {
-                System.out.println(li.next());
+                List<Employee> users = new Gson().fromJson(reader, new TypeToken<List<Employee>>() {
+                }.getType());
+                System.out.println("Employees List");
+                users.forEach(System.out::println);
+                reader.close();
             }
-        } else {
-            System.out.println("There are no employees to display");
+
+        } catch (JsonIOException | JsonSyntaxException | IOException ex) {
+            System.out.println("File does not exist");
         }
     }
 //Search employee
 
     public static void searchEmployee() throws FileNotFoundException, IOException, ClassNotFoundException {
-
-        if (file.isFile()) {
-            ois = new ObjectInputStream(new FileInputStream(file));
-            aList = (ArrayList<Employee>) ois.readObject();
-            ois.close();
-            boolean found = false;
+        boolean found = false;
+        try (
+                Reader reader = Files.newBufferedReader(Paths.get("Employee.json"))) {
+            // convert JSON array to list of users
+            ArrayList<Employee> users = new Gson().fromJson(reader, new TypeToken<ArrayList<Employee>>() {
+            }.getType());
+            reader.close();
 
             System.out.println("*****************************************************************************");
             System.out.print("Enter Employee email to search: ");
             String email = sString.nextLine();
-            System.out.println("*****************************************************************************");
 
-            li = aList.listIterator();
+            li = users.listIterator();
             while (li.hasNext()) {
                 Employee e = (Employee) li.next();
                 if (e.email.contentEquals(email)) {
+                    System.out.println("Employee found");
                     System.out.println(e);
                     found = true;
                 }
@@ -217,28 +230,27 @@ public class Employee implements Serializable {
             if (!found) {
                 System.out.println("Employee not found.");
             }
-        } else {
-            System.out.println("File does not exist");
         }
     }
 
 // update employee
     public static void updateEmployee() throws IOException, ClassNotFoundException {
-        if (file.isFile()) {
-            ois = new ObjectInputStream(new FileInputStream(file));
-            aList = (ArrayList<Employee>) ois.readObject();
-            ois.close();
+        boolean found = false;
+        try (
+                Reader reader = Files.newBufferedReader(Paths.get("Employee.json"))) {
+            // convert JSON array to list of users
+            ArrayList<Employee> users = new Gson().fromJson(reader, new TypeToken<ArrayList<Employee>>() {
+            }.getType());
+            reader.close();
 
-            System.out.print("Enter Employee email to update: ");
-            String empEmail = sString.nextLine();
-            boolean found = false;
             System.out.println("*****************************************************************************");
+            System.out.print("Enter Employee email to update: ");
+            String email = sString.nextLine();
 
-            li = aList.listIterator();
+            li = users.listIterator();
             while (li.hasNext()) {
                 Employee e = (Employee) li.next();
-                if (e.email.contentEquals(empEmail)) {
-
+                if (e.email.contentEquals(email)) {
                     System.out.print("Enter Employee Name: ");
                     while (!sString.hasNext("[A-Za-z]*")) {
                         System.out.print(sString.nextLine() + " is not a valid name please enter a valid name: ");
@@ -260,39 +272,40 @@ public class Employee implements Serializable {
                         isDate = Employee.isDate(d) == true;
                         date_of_birth = d;
                     } while (isDate == false);
-                    li.set(new Employee(name, surname, empEmail, date_of_birth));
+                    li.set(new Employee(name, surname, email, date_of_birth));
                     found = true;
                 }
             }
             if (found) {
-                oos = new ObjectOutputStream(new FileOutputStream(file));
-                oos.writeObject(aList);
-                oos.close();
-                System.out.println("Record updated successfully");
+                Gson gson = new Gson();
+                String json = gson.toJson(users);
+                try (Writer writer = new FileWriter(file)) {
+                    writer.write(json);
+                    writer.flush();
+                    writer.close();
+                    System.out.println("Record updated");
+                }
             } else {
                 System.out.println("Employee not found.");
             }
-
-        } else {
-            System.out.println("File does not exist");
         }
     }
 
 //Delete employee
     public static void deleteEmployee() throws FileNotFoundException, IOException, ClassNotFoundException {
+        boolean found = false;
+        try (
+                Reader reader = Files.newBufferedReader(Paths.get("Employee.json"))) {
 
-        if (file.isFile()) {
-            ois = new ObjectInputStream(new FileInputStream(file));
-            aList = (ArrayList<Employee>) ois.readObject();
-            ois.close();
+            ArrayList<Employee> users = new Gson().fromJson(reader, new TypeToken<ArrayList<Employee>>() {
+            }.getType());
+            reader.close();
 
             System.out.println("*****************************************************************************");
             System.out.print("Enter Employee email to delete: ");
             String email = sString.nextLine();
-            boolean found = false;
 
-            System.out.println("*****************************************************************************");
-            li = aList.listIterator();
+            li = users.listIterator();
             while (li.hasNext()) {
                 Employee e = (Employee) li.next();
                 if (e.email.contentEquals(email)) {
@@ -301,41 +314,43 @@ public class Employee implements Serializable {
                 }
             }
             if (found) {
-                oos = new ObjectOutputStream(new FileOutputStream(file));
-                oos.writeObject(aList);
-                oos.flush();
-                oos.close();
-                System.out.println("Record deleted successfully");
+                Gson gson = new Gson();
+                String json = gson.toJson(users);
+                try (Writer writer = new FileWriter(file)) {
+                    writer.write(json);
+                    writer.flush();
+                    writer.close();
+                    System.out.println("Record deleted");
+                }
             } else {
                 System.out.println("Employee not found.");
             }
-        } else {
-            System.out.println("File does not exist");
         }
     }
 
 //sort employees
     public static void sortEmployee() throws FileNotFoundException, IOException, ClassNotFoundException {
-        if (file.isFile()) {
-            ois = new ObjectInputStream(new FileInputStream(file));
-            aList = (ArrayList<Employee>) ois.readObject();
-            ois.close();
+        try (Reader reader = Files.newBufferedReader(Paths.get("Employee.json"))) {
 
-            Collections.sort(aList, new NameComparator());
+            List<Employee> users = new Gson().fromJson(reader, new TypeToken<List<Employee>>() {
+            }.getType());
+            reader.close();
 
-            oos = new ObjectOutputStream(new FileOutputStream(file));
-            oos.writeObject(aList);
-            oos.flush();
-            oos.close();
-
+            Collections.sort(users, new NameComparator());
+            Gson gson = new Gson();
+            String json = gson.toJson(users);
+            try (Writer writer = new FileWriter(file)) {
+                writer.write(json);
+                writer.flush();
+                writer.close();
+            }
             System.out.println("*****************************************************************************");
-            li = aList.listIterator();
+            System.out.println("Sorted List");
+            li = users.listIterator();
             while (li.hasNext()) {
                 System.out.println(li.next());
             }
-        } else {
-            System.out.println("File does not exist");
-        }
+        } 
     }
 }
 

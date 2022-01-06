@@ -55,6 +55,8 @@ public class EmployeeDetails {
                 case 6:
                     Employee.sortEmployee();
                     break;
+                case 0:
+                    break;
                 default :
                     System.out.println("Choice must be between -1 and 7");
             }
